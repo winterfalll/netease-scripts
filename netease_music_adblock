@@ -1,0 +1,42 @@
+/**
+ * 网易云音乐重写脚本
+ * 屏蔽发现页推荐、关注页推荐、广告
+ * 保留基础功能，避免影响正常使用
+ */
+
+let url = $request.url;
+
+if (/\/eapi\/discovery\/resources/.test(url)) {
+  // 发现页接口 - 屏蔽推荐内容
+  let body = $response.body;
+  let json = JSON.parse(body);
+  if (json && json.result && Array.isArray(json.result.discovery)) {
+    json.result.discovery = [];
+  }
+  $done({ body: JSON.stringify(json) });
+
+} else if (/\/eapi\/link\/page\/follow/.test(url)) {
+  // 关注页接口 - 过滤推荐模块
+  let body = $response.body;
+  let json = JSON.parse(body);
+  if (json && json.data && Array.isArray(json.data.blocks)) {
+    json.data.blocks = json.data.blocks.filter(block => !block.type.includes("recommend"));
+  }
+  $done({ body: JSON.stringify(json) });
+
+} else if (/\/eapi\/ad\/get/.test(url) || /\/eapi\/banner\/get/.test(url)) {
+  // 广告接口 - 清空广告
+  let body = $response.body;
+  let json = JSON.parse(body);
+  if (json && json.banners) {
+    json.banners = [];
+  }
+  if (json && json.ads) {
+    json.ads = [];
+  }
+  $done({ body: JSON.stringify(json) });
+
+} else {
+  // 其他请求不改动
+  $done({});
+}
